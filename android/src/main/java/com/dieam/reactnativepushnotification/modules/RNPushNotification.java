@@ -7,10 +7,13 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.NotificationManagerCompat;
 
 import com.dieam.reactnativepushnotification.helpers.ApplicationBadgeHelper;
+import com.facebook.react.ReactApplication;
+import com.facebook.react.ReactNativeHost;
 import com.facebook.react.bridge.ActivityEventListener;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.Promise;
@@ -25,8 +28,6 @@ import com.facebook.react.bridge.WritableMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-
-import android.util.Log;
 
 import com.google.firebase.messaging.FirebaseMessaging;
 
@@ -133,12 +134,19 @@ public class RNPushNotification extends ReactContextBaseJavaModule implements Ac
 
         Intent GCMService = new Intent(reactContext, RNPushNotificationRegistrationService.class);
 
-        try {
-            GCMService.putExtra("senderID", senderID);
+        GCMService.putExtra("senderID", senderID);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !appInForeground) {
+            reactContext.startForegroundService(GCMService);
+        } else {
             reactContext.startService(GCMService);
-        } catch (Exception e) {
-            Log.d("EXCEPTION SERVICE::::::", "requestPermissions: " + e);
         }
+    }
+
+    private static boolean isReactNativeAppInForeground(ReactContext reactContext) {
+        ReactNativeHost reactNativeHost = ((ReactApplication) reactContext.getApplicationContext()).getReactNativeHost();
+
+        return reactNativeHost.hasInstance() && reactContext.getLifecycleState() == LifecycleState.RESUMED;
     }
 
     @ReactMethod
